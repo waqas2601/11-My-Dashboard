@@ -8,10 +8,13 @@ app.use(cors());
 
 // MongoDB connection (replace with your own connection string)
 mongoose
-  .connect("mongodb://127.0.0.1:27017/fooddb", {
-    useNewUrlParser: true,
-    useUnifiedTopology: true,
-  })
+  .connect(
+    "mongodb+srv://mw2601005_db_user:5tQRy96IMxxjaopK@cluster0.gjnvbrb.mongodb.net/fooddb?retryWrites=true&w=majority&appName=Cluster0",
+    {
+      useNewUrlParser: true,
+      useUnifiedTopology: true,
+    }
+  )
   .then(() => console.log("✅ Connected to MongoDB"))
   .catch((err) => console.error("❌ MongoDB connection error:", err));
 
