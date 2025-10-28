@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
+import { Link, useNavigate } from "react-router-dom";
 
 type Food = {
   _id: string;
@@ -8,42 +8,108 @@ type Food = {
   weight: number;
   img: string;
 };
+
 function Update() {
   const [data, setData] = useState<Food[]>([]);
+  const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
+  const [btnLoading, setBtnLoading] = useState<string | null>(null);
 
   async function fetchData() {
-    const response = await fetch("http://localhost:3000/api/foods");
-    const data = await response.json();
-    setData(data);
+    setIsLoading(true);
+    setError(null);
+    try {
+      const response = await fetch("http://localhost:3000/api/foods");
+      if (!response.ok) {
+        throw new Error(`Server error: ${response.status}`);
+      }
+      const result = await response.json();
+      setData(result.data ?? result);
+    } catch (err: any) {
+      setError(err?.message || "Failed to load items");
+      setData([]);
+    } finally {
+      setIsLoading(false);
+    }
   }
-  console.log(data);
+
   useEffect(() => {
     fetchData();
   }, []);
 
+  const navigate = useNavigate();
+
+  function handleBtnLoader(id: string) {
+    setBtnLoading(id);
+    setTimeout(() => {
+      setBtnLoading(null);
+      navigate(`/update/${id}`);
+    }, 1000);
+  }
+
   return (
     <div className="p-6 w-full h-full overflow-y-auto">
-      <h1 className="text-2xl font-bold mb-6 text-center">🍽️ Food Items</h1>
+      <h1 className="text-2xl font-bold mb-6 text-center">
+        ✏️ Update Food Items
+      </h1>
 
-      {/* Responsive grid */}
-      <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-        {data !== undefined &&
-          data.map((food) => (
+      {/* 🔹 Loading */}
+      {isLoading && (
+        <div className="flex items-center justify-center py-16">
+          <div className="text-gray-500 text-lg">Loading items...</div>
+        </div>
+      )}
+
+      {/* 🔹 Error */}
+      {!isLoading && error && (
+        <div className="bg-red-50 border border-red-200 text-red-700 p-4 rounded-md max-w-xl mx-auto text-center mb-6">
+          <p className="font-medium">Could not load items</p>
+          <p className="text-sm mt-1">{error}</p>
+          <button
+            onClick={fetchData}
+            className="mt-3 inline-block bg-red-600 text-white px-4 py-1.5 rounded hover:bg-red-700"
+          >
+            Retry
+          </button>
+        </div>
+      )}
+
+      {/* No items message */}
+      {!isLoading && !error && data.length === 0 && (
+        <div className="flex flex-col items-center justify-center py-16 gap-4">
+          <h2 className="text-xl font-semibold text-gray-700">
+            No items to update
+          </h2>
+          <p className="text-gray-500 max-w-lg text-center">
+            There are currently no food items available to update. Please add
+            some new items first, and they will appear here for editing.
+          </p>
+
+          <Link
+            to="/create"
+            className="mt-3 inline-block bg-green-600 text-white px-5 py-2 rounded-md shadow-sm hover:bg-green-700"
+          >
+            Add New Item
+          </Link>
+        </div>
+      )}
+
+      {/* 🔹 Data grid */}
+      {!isLoading && !error && data.length > 0 && (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+          {data.map((food) => (
             <div
               key={food._id}
               className="border rounded-xl shadow-md overflow-hidden hover:scale-105 transition-transform duration-300 bg-white"
             >
-              {/* Food Image */}
               <img
                 src={food.img}
                 alt={food.name}
                 className="h-48 w-full object-cover"
               />
 
-              {/* Food Details */}
               <div className="p-4 flex flex-col gap-2">
                 <h2 className="font-semibold text-lg">{food.name}</h2>
-
                 <div className="flex justify-between text-sm text-gray-600">
                   <p>
                     💰 Price:{" "}
@@ -55,16 +121,22 @@ function Update() {
                   </p>
                 </div>
 
-                <Link
-                  to={`/update/${food._id}`}
-                  className="mt-3 bg-blue-500 text-white py-1.5 rounded hover:bg-blue-600 transition-all text-center"
+                {/* 🔹 Update Button */}
+                <button
+                  onClick={() => handleBtnLoader(food._id)}
+                  className={`mt-3 flex items-center justify-center gap-2 text-center py-1.5 rounded transition-all cursor-pointer ${
+                    btnLoading === food._id
+                      ? "bg-gray-400 text-white cursor-not-allowed"
+                      : "bg-blue-500 text-white hover:bg-blue-600"
+                  }`}
                 >
-                  Update
-                </Link>
+                  {btnLoading === food._id ? "Loading..." : "Edit / Update"}
+                </button>
               </div>
             </div>
           ))}
-      </div>
+        </div>
+      )}
     </div>
   );
 }
